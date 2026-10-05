@@ -1,0 +1,79 @@
+<Window x:Class="OrbDock.Views.DockWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="OrbDock"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="{x:Null}"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="False"
+        WindowStartupLocation="Manual"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        Width="800"
+        Height="160"
+        Left="-4000"
+        Top="-4000">
+
+    <Canvas x:Name="Root" ClipToBounds="True" Background="{x:Null}">
+
+        <!-- 会整体滑出屏幕的内容 -->
+        <Canvas x:Name="SlideGroup" Width="1" Height="1">
+            <Canvas.RenderTransform>
+                <TranslateTransform x:Name="Slide" />
+            </Canvas.RenderTransform>
+
+            <!-- 液态玻璃胶囊 -->
+            <Border x:Name="Pill" ClipToBounds="True" SnapsToDevicePixels="True">
+                <Border.Effect>
+                    <DropShadowEffect x:Name="PillShadow"
+                                      BlurRadius="16" ShadowDepth="3" Direction="270"
+                                      Color="#000000" Opacity="0.42" RenderingBias="Quality" />
+                </Border.Effect>
+                <Grid>
+                    <!-- 毛玻璃底图：抓屏 + 预模糊的位图作为圆角 Border 的背景刷，
+                         背景刷会被圆角抗锯齿裁切，不会像 BlurEffect 那样糊出边界 -->
+                    <Border x:Name="BlurLayer" IsHitTestVisible="False" />
+                    <Border x:Name="TintLayer" />
+                    <Image x:Name="BgImage" Stretch="UniformToFill" Opacity="0.45" Visibility="Collapsed" />
+                    <Border x:Name="AccentLayer" />
+                    <Border x:Name="NoiseLayer" Opacity="0.05" IsHitTestVisible="False" />
+                    <Border x:Name="InnerShade" />
+
+                    <ScrollViewer x:Name="Scroller"
+                                  HorizontalScrollBarVisibility="Hidden"
+                                  VerticalScrollBarVisibility="Hidden"
+                                  PanningMode="None"
+                                  Focusable="False"
+                                  Background="{x:Null}">
+                        <StackPanel x:Name="ItemsPanel" Orientation="Horizontal"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </ScrollViewer>
+
+                    <!-- 内部流光：做成圆角 Border 的径向渐变背景，跟着圆角抗锯齿裁切 -->
+                    <Border x:Name="SheenLayer" IsHitTestVisible="False" Opacity="0.5" />
+
+                    <Border x:Name="GlossLayer" IsHitTestVisible="False" />
+                    <Border x:Name="RimLayer" BorderThickness="1" IsHitTestVisible="False" />
+                </Grid>
+            </Border>
+
+            <!-- 悬停时显示的图标名称 -->
+            <Border x:Name="LabelBox" Visibility="Collapsed" IsHitTestVisible="False"
+                    CornerRadius="8" Padding="10,5">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="12" ShadowDepth="2" Direction="270"
+                                      Color="#000000" Opacity="0.45" />
+                </Border.Effect>
+                <TextBlock x:Name="LabelText" FontSize="12.5" FontWeight="Medium"
+                           TextTrimming="CharacterEllipsis" MaxWidth="240" />
+            </Border>
+        </Canvas>
+
+        <!-- 隐藏时用于唤出的感应条（几乎全透明，仅用于接收鼠标） -->
+        <Border x:Name="HotZoneEdge" Background="#02FFFFFF" Visibility="Collapsed" />
+    </Canvas>
+</Window>
