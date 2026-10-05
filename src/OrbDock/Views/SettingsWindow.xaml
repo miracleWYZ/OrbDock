@@ -574,6 +574,9 @@
                                 <TextBlock Text="Dock 显示选项" Style="{StaticResource Sec}" />
                                 <CheckBox x:Name="ChkShowLabels" Content="鼠标悬停时显示图标名称" />
                                 <CheckBox x:Name="ChkShowDot" Content="显示运行中的程序指示点" />
+                                <CheckBox x:Name="ChkActivateRunning" Content="点击已运行的程序时切到它的窗口" />
+                                <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                           Text="不勾选则每次都重新启动一个（浏览器等需要多开的程序可以不勾）。" />
                                 <CheckBox x:Name="ChkShowSettingsBtn" Content="在 Dock 末尾显示设置按钮" />
                             </StackPanel>
                         </ScrollViewer>

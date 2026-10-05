@@ -280,7 +280,7 @@ namespace OrbDock.Views
             }
             if (c.Item == null) return;
             if (_store.Current.LaunchEffect == "bounce") c.Bounce();
-            Launcher.Launch(c.Item, this);
+            Launcher.Launch(c.Item, this, _store.Current.ActivateRunning);
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 var t = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };

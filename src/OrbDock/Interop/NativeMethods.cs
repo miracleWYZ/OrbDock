@@ -313,6 +313,14 @@ namespace OrbDock.Interop
         public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         public const int SW_RESTORE = 9;
+        public const int SW_SHOW = 5;
+
+        [DllImport("user32.dll")]
+        public static extern bool IsIconic(IntPtr hWnd);
+
+        /// <summary>SetForegroundWindow 被系统前台锁拒绝时的兜底手段。</summary>
+        [DllImport("user32.dll")]
+        public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
 
         // ───────── Shell 图标 ─────────
         public const uint SHGFI_ICON = 0x000000100;

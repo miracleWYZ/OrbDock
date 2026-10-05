@@ -5,13 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows;
+using OrbDock.Interop;
 using OrbDock.Models;
 
 namespace OrbDock.Services
 {
     public static class Launcher
     {
-        public static void Launch(DockItem item, Window owner)
+        public static void Launch(DockItem item, Window owner, bool activateRunning)
         {
             if (item == null) return;
             try
@@ -30,6 +31,10 @@ namespace OrbDock.Services
                     case ItemKind.Separator:
                         break;
                     default:
+                        // 单实例程序（微信/哔哩哔哩/QQ 这类）再次启动只会立刻退出，
+                        // 看上去就是"点了没反应"，所以先尝试把它已有的窗口恢复并切到前台
+                        if (activateRunning && !item.RunAsAdmin && TryActivate(item)) return;
+
                         var psi = new ProcessStartInfo
                         {
                             FileName = item.Target,
@@ -48,6 +53,48 @@ namespace OrbDock.Services
                 Log.Warn("启动失败(" + item.Target + "): " + ex.Message);
                 MessageBox.Show("无法启动：" + item.Name + "\n" + ex.Message,
                     "OrbDock", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        /// <summary>
+        /// 该程序已在运行且有自己的窗口时，恢复（若最小化）并切到前台。
+        /// 成功返回 true；没在运行 / 只有托盘无窗口 / 激活失败都返回 false（调用方会照常启动新的）。
+        /// </summary>
+        public static bool TryActivate(DockItem item)
+        {
+            if (item == null) return false;
+            try
+            {
+                string exe = ProcessWatcher.ResolveExeName(item);
+                if (string.IsNullOrEmpty(exe)) return false;
+
+                IntPtr hwnd = IntPtr.Zero;
+                foreach (var p in Process.GetProcessesByName(exe))
+                {
+                    try
+                    {
+                        if (p.MainWindowHandle != IntPtr.Zero) { hwnd = p.MainWindowHandle; break; }
+                    }
+                    catch { }
+                    finally { p.Dispose(); }
+                }
+                if (hwnd == IntPtr.Zero) return false;
+
+                if (NativeMethods.IsIconic(hwnd))
+                    NativeMethods.ShowWindow(hwnd, NativeMethods.SW_RESTORE);
+                else
+                    NativeMethods.ShowWindow(hwnd, NativeMethods.SW_SHOW);
+
+                if (NativeMethods.SetForegroundWindow(hwnd)) return true;
+
+                // Windows 的前台锁有时会拒绝 SetForegroundWindow，用这个兜底
+                NativeMethods.SwitchToThisWindow(hwnd, true);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("激活已有窗口失败(" + item.Name + "): " + ex.Message);
+                return false;
             }
         }
 

@@ -78,6 +78,8 @@ namespace OrbDock.Models
         public bool ShowLabels { get; set; } = true;
         public bool ShowRunningDot { get; set; } = true;
         public bool ShowSettingsButton { get; set; } = true;
+        /// <summary>点击已在运行的程序时，切到它已有的窗口而不是再启动一个（单实例程序再启动不会有任何反应）。</summary>
+        public bool ActivateRunning { get; set; } = true;
 
         // ───────── 颜色 ─────────
         public bool FollowSystemAccent { get; set; } = true;

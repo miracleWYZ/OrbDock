@@ -218,6 +218,7 @@ namespace OrbDock.Views
 
             BindCheck(ChkShowLabels, () => _s.ShowLabels, v => _s.ShowLabels = v);
             BindCheck(ChkShowDot, () => _s.ShowRunningDot, v => _s.ShowRunningDot = v);
+            BindCheck(ChkActivateRunning, () => _s.ActivateRunning, v => _s.ActivateRunning = v);
             BindCheck(ChkShowSettingsBtn, () => _s.ShowSettingsButton, v => _s.ShowSettingsButton = v);
 
             BindCheck(ChkFollowAccent, () => _s.FollowSystemAccent, v => _s.FollowSystemAccent = v);
