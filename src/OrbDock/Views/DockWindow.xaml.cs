@@ -765,6 +765,12 @@ namespace OrbDock.Views
             else
                 _slideHidden = (_winW - s.RevealWhenHidden) - _pillX;
 
+            // 停靠边可能变了：把位移重新落到正确的轴上（另一边清零），
+            // 否则从"顶部"切到"左侧"后，残留的 Y 位移会让胶囊位置错乱
+            Slide.X = 0;
+            Slide.Y = 0;
+            ApplySlideOffset(_shown ? 0 : _slideHidden);
+
             // 感应条：贴着屏幕边缘的一条窄带，用于把 Dock 唤出来
             double hotBand = Math.Max(16, s.EdgeMargin + 10);
             if (s.Edge == DockEdge.Bottom)
@@ -880,9 +886,9 @@ namespace OrbDock.Views
             // 必须在胶囊滑出之前抓屏：此刻该区域只有桌面，不会把 Dock 自己拍进去
             if (wasHidden || _glassCapture == null) CaptureGlass();
 
-            double from = Slide.Y;
+            double from = SlideOffset;
             double to = 0;
-            _slideTicker.Start(from, to, animate ? 280 : 1, v => Slide.Y = v, () => ApplyZOrder());
+            _slideTicker.Start(from, to, animate ? 280 : 1, ApplySlideOffset, () => ApplyZOrder());
             ApplyZOrder();
         }
 
@@ -901,15 +907,29 @@ namespace OrbDock.Views
 
             if (!animate)
             {
-                Slide.Y = _slideHidden;
+                ApplySlideOffset(_slideHidden);
 
                 return;
             }
 
-            _slideTicker.Start(Slide.Y, _slideHidden, 260, v => Slide.Y = v, () =>
+            _slideTicker.Start(SlideOffset, _slideHidden, 260, ApplySlideOffset, () =>
             {
 
             });
+        }
+
+        /// <summary>
+        /// 收起/展开的位移。横向停靠（上/下）走 Y 轴，竖向停靠（左/右）必须走 X 轴，
+        /// 否则侧边时胶囊只会上下挪、根本缩不回屏幕外。
+        /// </summary>
+        private double SlideOffset
+        {
+            get { return _horizontal ? Slide.Y : Slide.X; }
+        }
+
+        private void ApplySlideOffset(double v)
+        {
+            if (_horizontal) Slide.Y = v; else Slide.X = v;
         }
 
         public void ToggleDock()
