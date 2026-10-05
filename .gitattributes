@@ -1,0 +1,7 @@
+# 默认不做行尾转换，文件按原样存储（避免整仓 renormalize 噪声）
+* -text
+
+# 批处理脚本必须是 CRLF：LF-only 会让 cmd.exe 把每行拆碎，
+# 报出 "xxx 不是内部或外部命令" 这类莫名其妙的错误
+*.cmd text eol=crlf
+*.bat text eol=crlf
