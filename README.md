@@ -22,10 +22,30 @@
 
 ## 一、快速开始
 
-1. 双击 **`启动 OrbDock.cmd`**，或直接运行 **`app\OrbDock.exe`**。
-2. 需要 **.NET 8 桌面运行时**（`Microsoft.WindowsDesktop.App 8.x`）。
-   没装的话去 <https://dotnet.microsoft.com/download/dotnet/8.0> 下载 “.NET Desktop Runtime”。
-3. 首次启动会在屏幕底部出现一条胶囊形 Dock，鼠标离开后自动收起；把鼠标移到屏幕对应边缘即可唤出。
+### 方式一：下载免安装版（推荐，不需要装任何东西）
+
+1. 打开 **[Releases](https://github.com/miracleWYZ/OrbDock/releases)**，下载最新版的
+   `OrbDock-v1.0.0-win-x64.zip`（自带 .NET 运行时，解压即用）。
+2. 解压到任意目录（建议路径不含空格），双击里面的 **`启动 OrbDock.cmd`**。
+
+> **本仓库只包含源码，不含编译产物**（`app/`、`bin/`、`obj/` 都在 `.gitignore` 里）。
+> 所以直接 `git clone` 之后双击 `启动 OrbDock.cmd` 是启动不了的——它会提示你先构建或去下 Release。
+
+### 方式二：从源码构建（需要 .NET 8 SDK）
+
+```powershell
+git clone https://github.com/miracleWYZ/OrbDock.git
+cd OrbDock
+.\build.ps1 -Publish        # 构建并发布到 .\app
+.\启动 OrbDock.cmd           # 或直接运行 app\OrbDock.exe
+```
+
+发布出来的是 **framework-dependent** 版本，需要机器上装有
+**.NET 8 桌面运行时**（<https://dotnet.microsoft.com/download/dotnet/8.0> 里的 “.NET Desktop Runtime”）。
+
+### 首次启动
+
+会在屏幕底部出现一条胶囊形 Dock，鼠标离开后自动收起；把鼠标移到屏幕对应边缘即可唤出。
 
 ![设置界面](docs/settings.png)
 
