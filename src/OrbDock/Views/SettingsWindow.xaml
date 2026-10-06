@@ -792,6 +792,11 @@
                         <CheckBox x:Name="ChkAutoStart" Content="开机自动启动" />
                         <CheckBox x:Name="ChkTray" Content="在系统托盘显示图标（可从这里重新打开设置）" />
 
+                        <TextBlock Text="兼容性（显卡驱动问题）" Style="{StaticResource Sec}" />
+                        <CheckBox x:Name="ChkSoftwareRender" Content="禁用硬件加速（显卡驱动不稳定时勾选）" />
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                   Text="若程序曾突然消失/闪退，且事件查看器里有 LiveKernelEvent（显卡超时），勾选此项可避开显卡驱动导致的崩溃（画质不变；此模式下内部流光会改为静态，以把 CPU 占用压到最低）。改完需重启 OrbDock。" />
+
                         <TextBlock Text="关于" Style="{StaticResource Sec}" />
                         <TextBlock Style="{StaticResource Hint}"
                                    Text="OrbDock · 液态玻璃桌面导航栏。配置位于 %APPDATA%\OrbDock\settings.json（不可写时自动回退到 %LOCALAPPDATA% 或程序目录 data\），日志为同目录 orblock.log。" />

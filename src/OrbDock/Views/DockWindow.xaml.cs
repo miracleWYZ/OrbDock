@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Windows;
@@ -468,6 +469,7 @@ namespace OrbDock.Views
             // 投影：收紧一点，避免在半透明胶囊周围形成明显的灰晕
             if (s.ShowShadow)
             {
+                if (Pill.Effect == null) Pill.Effect = PillShadow;   // 关掉时是摘掉的，这里挂回去
                 PillShadow.Opacity = p.Light ? 0.22 : 0.42;
                 PillShadow.BlurRadius = 16;
                 PillShadow.ShadowDepth = 3;
@@ -475,7 +477,9 @@ namespace OrbDock.Views
             }
             else
             {
-                PillShadow.Opacity = 0;
+                // 不能只把 Opacity 设成 0：效果仍挂在元素上，每次重绘都要白算一遍模糊
+                // （软件渲染下尤其贵）。直接摘掉。
+                Pill.Effect = null;
             }
 
             // 背景图片
@@ -515,6 +519,8 @@ namespace OrbDock.Views
         }
 
         private RadialGradientBrush _sheenBrush;
+        private DispatcherTimer _sheenTimer;
+        private readonly Stopwatch _sheenWatch = new Stopwatch();
 
         private void ApplySheen(DockSettings s, Palette p)
         {
@@ -532,19 +538,48 @@ namespace OrbDock.Views
                 _sheenBrush.GradientStops.Add(new GradientStop(Colors.Transparent, 0));
                 SheenLayer.Background = _sheenBrush;
 
-                var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
-                var dur = TimeSpan.FromSeconds(9);
-                _sheenBrush.BeginAnimation(RadialGradientBrush.CenterProperty,
-                    new PointAnimation(new Point(0.18, 0.35), new Point(0.82, 0.62), dur)
-                    { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever, EasingFunction = ease });
-                _sheenBrush.BeginAnimation(RadialGradientBrush.GradientOriginProperty,
-                    new PointAnimation(new Point(0.12, 0.3), new Point(0.9, 0.7), dur)
-                    { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever, EasingFunction = ease });
+                // 注意：这里**不能**用 WPF 的 Forever 动画驱动流光。
+                // 那会让渲染线程按 60fps 无休止重绘整个胶囊，实测待机就吃掉约 59% 单核，
+                // 还持续给 GPU 施压（很可能就是诱发显卡超时/闪退的推手）。
+                // 改成低频定时器自己推进，并且只在"展开"时才跑。
+                _sheenTimer = new DispatcherTimer(DispatcherPriority.Background)
+                {
+                    Interval = TimeSpan.FromMilliseconds(100)  // 10fps：慢速漂移足够顺，帧率再高只是白烧 CPU
+                };
+                _sheenTimer.Tick += (s2, e2) => StepSheen();
+                _sheenWatch.Start();
             }
 
             _sheenBrush.GradientStops[0].Color =
                 ColorUtil.WithAlpha(ColorUtil.Lighten(p.Accent, 0.78), 0.22 * s.HighlightStrength);
             _sheenBrush.GradientStops[1].Color = ColorUtil.WithAlpha(p.Accent, 0.0);
+
+            UpdateSheenTimer();
+        }
+
+        /// <summary>流光只在「展开且开启内部流光」时运行，收起后彻底停下。</summary>
+        private void UpdateSheenTimer()
+        {
+            if (_sheenTimer == null) return;
+            // 软件渲染下不做流光动画：每次推进都要 CPU 重绘整个窗口（实测 46% 单核），
+            // 而 9 秒一次的慢速漂移本来就看不明显，退回静态高光。
+            bool want = _shown && _store.Current.ShowInnerGlow && !App.SoftwareRendering;
+            if (!want && _sheenBrush != null)
+            {
+                _sheenBrush.Center = new Point(0.56, 0.53);
+                _sheenBrush.GradientOrigin = new Point(0.55, 0.54);
+            }
+            if (want && !_sheenTimer.IsEnabled) { _sheenWatch.Restart(); _sheenTimer.Start(); }
+            else if (!want && _sheenTimer.IsEnabled) _sheenTimer.Stop();
+        }
+
+        private void StepSheen()
+        {
+            if (_sheenBrush == null) return;
+            double t = (_sheenWatch.Elapsed.TotalSeconds % 18.0) / 18.0;   // 9 秒一个来回
+            double k = 0.5 - 0.5 * Math.Cos(t * Math.PI * 2.0);
+            _sheenBrush.Center = new Point(0.30 + 0.52 * k, 0.45 + 0.17 * k);
+            _sheenBrush.GradientOrigin = new Point(0.20 + 0.70 * k, 0.38 + 0.32 * k);
         }
 
         /// <summary>
@@ -885,6 +920,7 @@ namespace OrbDock.Views
 
             // 必须在胶囊滑出之前抓屏：此刻该区域只有桌面，不会把 Dock 自己拍进去
             if (wasHidden || _glassCapture == null) CaptureGlass();
+            UpdateSheenTimer();
 
             double from = SlideOffset;
             double to = 0;
@@ -901,6 +937,7 @@ namespace OrbDock.Views
             SetHotZoneWatch(true);
             Debug.Marker("hide animate=" + animate);
             _hovered = null;
+            UpdateSheenTimer();
             HideLabel();
             UpdateHover(null);
             ApplyZOrder();

@@ -3,6 +3,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 using System.Windows.Threading;
 using OrbDock.Services;
 using OrbDock.Tray;
@@ -13,6 +15,9 @@ namespace OrbDock
     public partial class App : Application
     {
         private SettingsStore _store;
+
+        /// <summary>当前是否工作在软件渲染模式（供动画降级判断）。</summary>
+        internal static bool SoftwareRendering;
         private ThemeService _theme;
         private Launcher.ProcessWatcher _watcher;
         private DockWindow _dock;
@@ -75,6 +80,16 @@ namespace OrbDock
             _store = new SettingsStore();
             _store.Load();
             _store.Save(_store.Current);   // 首次运行即落盘，方便用户查看/编辑配置文件
+
+            // 渲染模式：显卡驱动不稳定（GPU 超时/被重置）时会直接把 WPF 的 D3D 设备打死，
+            // 这种崩溃发生在渲染线程，托管异常兜底抓不到，也没有转储。改成软件渲染可彻底避开。
+            bool softRender = _store.Current.SoftwareRender
+                || string.Equals(Environment.GetEnvironmentVariable("ORBDOCK_SOFTWARE_RENDER"), "1", StringComparison.Ordinal)
+                || (args != null && args.Any(a => string.Equals(a, "--software-render", StringComparison.OrdinalIgnoreCase)));
+            SoftwareRendering = softRender;
+            if (softRender)
+                RenderOptions.ProcessRenderMode = RenderMode.SoftwareOnly;
+            Log.Info("渲染模式: " + (softRender ? "软件渲染（已禁用硬件加速）" : "硬件加速"));
             Debug.Marker("settings loaded");
             Log.Info("OrbDock 启动，设置文件: " + _store.FilePath);
 

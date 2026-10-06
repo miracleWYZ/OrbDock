@@ -108,6 +108,9 @@ namespace OrbDock.Models
         public string EmergencyHotkey { get; set; } = "Ctrl+Alt+F12";
         public bool AutoStart { get; set; } = false;
         public bool ShowTrayIcon { get; set; } = true;
+
+        /// <summary>禁用硬件加速（改用软件渲染）。显卡驱动不稳定、GPU 超时导致程序闪退时打开。</summary>
+        public bool SoftwareRender { get; set; } = false;
         public DockLayer Layer { get; set; } = DockLayer.Desktop;
         /// <summary>把桌面图标收进 Dock 后隐藏桌面上的图标（不删除文件，随时可恢复）。</summary>
         public bool HideDesktopIcons { get; set; } = false;

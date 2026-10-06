@@ -246,6 +246,7 @@ namespace OrbDock.Views
                 DesktopIcons.SetHidden(v);
             });
             BindCheck(ChkAutoStart, () => _s.AutoStart, v => { _s.AutoStart = v; AutoStart.Set(v); });
+            BindCheck(ChkSoftwareRender, () => _s.SoftwareRender, v => _s.SoftwareRender = v);
             BindCheck(ChkTray, () => _s.ShowTrayIcon, v => _s.ShowTrayIcon = v);
         }
 
