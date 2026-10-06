@@ -99,6 +99,51 @@ namespace OrbDock.Services
             catch { return false; }
         }
 
+        /// <summary>
+        /// 当前进程真正的 exe 路径。
+        /// 注意：framework-dependent 发布时 Assembly.Location 给的是 .dll（.exe 只是 apphost 外壳），
+        /// 拿它写进 Run 键会导致开机启动一个 dll —— 什么都不会发生。
+        /// </summary>
+        public static string CurrentExePath()
+        {
+            try
+            {
+                var p = Environment.ProcessPath;
+                if (!string.IsNullOrEmpty(p) && p.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                    return p;
+
+                var loc = System.Reflection.Assembly.GetEntryAssembly()?.Location;
+                if (!string.IsNullOrEmpty(loc))
+                    return Path.ChangeExtension(loc, ".exe");
+            }
+            catch { }
+            return null;
+        }
+
+        /// <summary>开机自启用的命令行：--tray 让 Dock 启动后直接收起。</summary>
+        private static string CommandLine(string exe) => "\"" + exe + "\" --tray";
+
+        /// <summary>让注册表里的自启项与设置保持一致（每次启动时调用，可自动修好路径变了/写错的情况）。</summary>
+        public static void Apply(bool enabled)
+        {
+            if (!enabled) { Set(false); return; }
+
+            string exe = CurrentExePath();
+            if (string.IsNullOrEmpty(exe)) return;
+
+            string want = CommandLine(exe);
+            try
+            {
+                using (var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RunKey))
+                {
+                    if (k != null && string.Equals(k.GetValue(ValueName) as string, want, StringComparison.OrdinalIgnoreCase))
+                        return;   // 已经是正确的，不用重写
+                }
+            }
+            catch { }
+            Set(true);
+        }
+
         public static void Set(bool enabled)
         {
             try
@@ -108,9 +153,10 @@ namespace OrbDock.Services
                     if (k == null) return;
                     if (enabled)
                     {
-                        var exe = System.Reflection.Assembly.GetEntryAssembly()?.Location;
+                        var exe = CurrentExePath();
                         if (string.IsNullOrEmpty(exe)) return;
-                        k.SetValue(ValueName, "\"" + exe + "\" --tray");
+                        k.SetValue(ValueName, CommandLine(exe));
+                        Log.Info("已设置开机自启: " + exe);
                     }
                     else
                     {

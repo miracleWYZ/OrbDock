@@ -88,6 +88,10 @@ namespace OrbDock
                 Log.Info(string.Format("导入桌面图标：新增 {0} 项，跳过 {1} 项", added, skipped));
             }
 
+            // 命令行：--tray 启动后直接收起（供开机自启用，避免每次登录 Dock 先弹出来一下）
+            bool startInTray = args != null &&
+                args.Any(a => string.Equals(a, "--tray", StringComparison.OrdinalIgnoreCase));
+
             // 命令行：--desktop-icons=hide|show 直接切换桌面图标显示状态
             if (args != null)
             {
@@ -119,6 +123,12 @@ namespace OrbDock
             Debug.Marker("dock shown");
             _dock.ReloadAll();
             _dock.ShowDock(false);
+            if (startInTray)
+            {
+                // 同步收起：同一帧内完成，不会闪一下
+                _dock.HideDock(false);
+                Debug.Marker("start in tray");
+            }
             Debug.Marker("dock ready");
 
             _hotkey = new HotkeyService();
@@ -131,6 +141,9 @@ namespace OrbDock
 
             // 桌面图标隐藏状态跟随设置（两个方向都执行，保证与设置一致）
             DesktopIcons.SetHidden(_store.Current.HideDesktopIcons);
+
+            // 开机自启项与设置保持一致（程序挪过位置、或以前写错了路径，都会在这里自动纠正）
+            AutoStart.Apply(_store.Current.AutoStart);
 
             _themeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _themeTimer.Tick += (s, ev) => _theme.Refresh();
